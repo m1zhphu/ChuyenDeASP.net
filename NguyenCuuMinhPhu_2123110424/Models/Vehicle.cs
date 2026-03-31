@@ -23,5 +23,6 @@ namespace SmartGarage.Models
 
         [ForeignKey("CustomerId")]
         public virtual Customer Customer { get; set; } = null!;
+        public string? VinNumber { get; set; } // Thêm dấu ? để cho phép số khung/số máy có thể bỏ trống
     }
 }

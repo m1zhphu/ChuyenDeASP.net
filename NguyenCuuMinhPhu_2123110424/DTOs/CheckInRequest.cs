@@ -1,6 +1,6 @@
 ﻿namespace SmartGarage.DTOs
 {
-    public class ScanRequest
+    public class CheckInRequest
     {
         public string LicensePlate { get; set; } = string.Empty;
     }

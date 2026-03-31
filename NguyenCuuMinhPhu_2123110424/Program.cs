@@ -20,6 +20,11 @@ namespace NguyenCuuMinhPhu_2123110424
             // ==============================================================
             builder.Services.AddScoped<ICheckInService, CheckInService>();
             builder.Services.AddScoped<IRepairOrderService, RepairOrderService>();
+            builder.Services.AddScoped<ICustomerService, CustomerService>();
+            builder.Services.AddScoped<IVehicleService, VehicleService>();
+            builder.Services.AddScoped<IPartService, PartService>();
+            builder.Services.AddScoped<IServiceItemService, ServiceItemService>();
+            builder.Services.AddScoped<ICheckInService, CheckInService>();
             // 3. Thêm Controller
             builder.Services.AddControllers();
 

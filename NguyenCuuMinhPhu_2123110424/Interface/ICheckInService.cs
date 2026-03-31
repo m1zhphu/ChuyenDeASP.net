@@ -4,7 +4,6 @@ namespace SmartGarage.Interface
 {
     public interface ICheckInService
     {
-        Task<object> ProcessScanAsync(string licensePlate);
-        Task<bool> RegisterCustomerAsync(RegisterRequest request);
+        Task<CheckInResponseDTO> ProcessCheckInAsync(string licensePlate);
     }
 }

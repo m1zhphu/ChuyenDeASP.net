@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SmartGarage.Data;
 using SmartGarage.DTOs;
-using SmartGarage.Models;
 using SmartGarage.Interface;
+
 namespace SmartGarage.Services
 {
     public class CheckInService : ICheckInService
@@ -14,63 +14,35 @@ namespace SmartGarage.Services
             _context = context;
         }
 
-        public async Task<object> ProcessScanAsync(string licensePlate)
+        public async Task<CheckInResponseDTO> ProcessCheckInAsync(string licensePlate)
         {
+            // Dùng Include để kéo luôn thông tin Khách hàng của chiếc xe đó lên
             var vehicle = await _context.Vehicles
-                                        .Include(v => v.Customer)
-                                        .FirstOrDefaultAsync(v => v.LicensePlate == licensePlate);
+                .Include(v => v.Customer)
+                .FirstOrDefaultAsync(v => v.LicensePlate == licensePlate);
 
-            if (vehicle != null)
+            if (vehicle != null && vehicle.Customer != null)
             {
-                // Khách cũ
-                return new
+                return new CheckInResponseDTO
                 {
-                    status = "existing_customer",
-                    message = $"Chào anh/chị {vehicle.Customer.FullName}, xe {vehicle.Make} {vehicle.Model} đã trở lại.",
-                    customer = new { fullName = vehicle.Customer.FullName, phoneNumber = vehicle.Customer.PhoneNumber },
-                    vehicle = new { licensePlate = vehicle.LicensePlate, make = vehicle.Make, model = vehicle.Model }
+                    IsExisting = true,
+                    Message = $"Đã tìm thấy xe. Xin chào khách hàng {vehicle.Customer.FullName}!",
+                    CustomerId = vehicle.Customer.Id,
+                    CustomerName = vehicle.Customer.FullName ?? string.Empty,
+                    PhoneNumber = vehicle.Customer.PhoneNumber ?? string.Empty,
+                    VehicleId = vehicle.Id,
+                    LicensePlate = vehicle.LicensePlate ?? string.Empty,
+                    Make = vehicle.Make ?? string.Empty,
+                    Model = vehicle.Model ?? string.Empty
                 };
             }
 
-            // Khách mới
-            return new
+            return new CheckInResponseDTO
             {
-                status = "new_customer",
-                message = "Xe chưa có trong hệ thống, vui lòng tạo hồ sơ mới.",
-                licensePlate = licensePlate
+                IsExisting = false,
+                Message = "Xe mới lần đầu đến xưởng. Vui lòng tạo hồ sơ!",
+                LicensePlate = licensePlate
             };
-        }
-
-        public async Task<bool> RegisterCustomerAsync(RegisterRequest request)
-        {
-            try
-            {
-                var newCustomer = new Customer
-                {
-                    FullName = request.FullName,
-                    PhoneNumber = request.PhoneNumber,
-                    Address = request.Address
-                };
-
-                var newVehicle = new Vehicle
-                {
-                    LicensePlate = request.LicensePlate,
-                    Make = request.Make,
-                    Model = request.Model,
-                    Customer = newCustomer
-                };
-
-                _context.Customers.Add(newCustomer);
-                _context.Vehicles.Add(newVehicle);
-                await _context.SaveChangesAsync();
-
-                return true;
-            }
-            catch
-            {
-                // Bắt lỗi nếu lưu Database thất bại
-                return false;
-            }
         }
     }
 }

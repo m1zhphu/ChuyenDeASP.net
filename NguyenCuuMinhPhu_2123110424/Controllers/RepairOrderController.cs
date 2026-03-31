@@ -21,5 +21,19 @@ namespace SmartGarage.Controllers
             var result = await _orderService.CreateOrderAsync(request);
             return Ok(result);
         }
+
+        [HttpGet("{orderCode}")]
+        public async Task<IActionResult> GetOrderDetails(string orderCode)
+        {
+            var order = await _orderService.GetOrderDetailsAsync(orderCode); // Đã sửa tên biến ở đây
+            if (order == null) return NotFound(new { message = "Không tìm thấy phiếu sửa chữa." });
+            return Ok(order);
+        }
+        [HttpPost("pay")]
+        public async Task<IActionResult> Pay([FromBody] PaymentRequestDTO request)
+        {
+            var result = await _orderService.ProcessPaymentAsync(request);
+            return Ok(result);
+        }
     }
 }
