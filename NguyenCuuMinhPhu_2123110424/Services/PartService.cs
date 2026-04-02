@@ -23,7 +23,10 @@ namespace SmartGarage.Services
                 PartCode = p.PartCode,
                 PartName = p.PartName,
                 UnitPrice = p.UnitPrice,
-                StockQuantity = p.StockQuantity
+                StockQuantity = p.StockQuantity,
+                Unit = p.Unit,
+                MinStockLevel = p.MinStockLevel,
+                Location = p.Location
             }).ToListAsync();
         }
 
@@ -38,7 +41,10 @@ namespace SmartGarage.Services
                 PartCode = part.PartCode,
                 PartName = part.PartName,
                 UnitPrice = part.UnitPrice,
-                StockQuantity = part.StockQuantity
+                StockQuantity = part.StockQuantity,
+                Unit = part.Unit,
+                MinStockLevel = part.MinStockLevel,
+                Location = part.Location
             };
         }
 
@@ -49,7 +55,10 @@ namespace SmartGarage.Services
                 PartCode = request.PartCode,
                 PartName = request.PartName,
                 UnitPrice = request.UnitPrice,
-                StockQuantity = request.StockQuantity
+                StockQuantity = request.StockQuantity,
+                Unit = request.Unit,
+                MinStockLevel = request.MinStockLevel,
+                Location = request.Location
             };
 
             _context.Parts.Add(part);
@@ -61,7 +70,10 @@ namespace SmartGarage.Services
                 PartCode = part.PartCode,
                 PartName = part.PartName,
                 UnitPrice = part.UnitPrice,
-                StockQuantity = part.StockQuantity
+                StockQuantity = part.StockQuantity,
+                Unit = part.Unit,
+                MinStockLevel = part.MinStockLevel,
+                Location = part.Location
             };
         }
 
@@ -74,6 +86,9 @@ namespace SmartGarage.Services
             part.PartName = request.PartName;
             part.UnitPrice = request.UnitPrice;
             part.StockQuantity = request.StockQuantity;
+            part.Unit = request.Unit;
+            part.MinStockLevel = request.MinStockLevel;
+            part.Location = request.Location;
 
             await _context.SaveChangesAsync();
             return true;

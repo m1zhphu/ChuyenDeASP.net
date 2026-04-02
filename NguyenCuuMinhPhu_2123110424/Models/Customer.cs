@@ -18,7 +18,13 @@ namespace SmartGarage.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        // Navigation property: Một khách hàng có thể sở hữu nhiều xe
+        // --- CÁC CỘT BỔ SUNG TỪ BA ---
+        [MaxLength(100)]
+        public string? Email { get; set; }
+
+        [MaxLength(10)]
+        public string? Gender { get; set; }
+
         public virtual ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
     }
 }

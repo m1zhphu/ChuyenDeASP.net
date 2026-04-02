@@ -16,8 +16,14 @@ namespace SmartGarage.Models
         [ForeignKey("PartId")]
         public virtual Part Part { get; set; } = null!;
 
-        public int Quantity { get; set; } // Số lượng xuất kho [cite: 145]
+        public int Quantity { get; set; }
 
-        public decimal ActualPrice { get; set; } // Giá bán lúc đó [cite: 146]
+        public decimal ActualPrice { get; set; }
+
+        // --- CÁC CỘT BỔ SUNG TỪ BA ---
+        [MaxLength(255)]
+        public string? Note { get; set; }
+
+        public decimal DiscountPercent { get; set; } = 0;
     }
 }

@@ -6,6 +6,8 @@
         public string ServiceName { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public string Description { get; set; } = string.Empty;
+        public string? EstimatedTime { get; set; }
+        public bool IsActive { get; set; }
     }
 
     public class ServiceRequestDTO
@@ -13,5 +15,7 @@
         public string ServiceName { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public string Description { get; set; } = string.Empty;
+        public string? EstimatedTime { get; set; }
+        public bool IsActive { get; set; }
     }
 }

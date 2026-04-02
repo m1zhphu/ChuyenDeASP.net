@@ -13,8 +13,17 @@ namespace SmartGarage.Models
         [Required, MaxLength(100)]
         public string PartName { get; set; } = string.Empty;
 
-        public decimal UnitPrice { get; set; } // Giá bán lẻ [cite: 121]
+        public decimal UnitPrice { get; set; }
 
-        public int StockQuantity { get; set; } // Số lượng tồn kho [cite: 122]
+        public int StockQuantity { get; set; }
+
+        // --- CÁC CỘT BỔ SUNG TỪ BA ---
+        [MaxLength(20)]
+        public string? Unit { get; set; }
+
+        public int MinStockLevel { get; set; } = 0;
+
+        [MaxLength(100)]
+        public string? Location { get; set; }
     }
 }

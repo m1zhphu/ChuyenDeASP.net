@@ -9,23 +9,38 @@ namespace SmartGarage.Models
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required, MaxLength(50)]
-        public string OrderCode { get; set; } = string.Empty; // Mã phiếu in ra (VD: RO-2026) [cite: 129]
+        public string OrderCode { get; set; } = string.Empty;
 
         public Guid VehicleId { get; set; }
         [ForeignKey("VehicleId")]
         public virtual Vehicle Vehicle { get; set; } = null!;
 
-        public Guid AdvisorId { get; set; } // Cố vấn lập phiếu (Link tới bảng User) [cite: 131]
+        public Guid AdvisorId { get; set; }
 
-        public int CurrentOdometer { get; set; } // Số Km hiện tại của xe [cite: 132]
+        public int CurrentOdometer { get; set; }
 
-        public string Status { get; set; } = "Pending"; // Trạng thái phiếu [cite: 133]
+        [MaxLength(20)]
+        public string Status { get; set; } = "Pending";
 
         public decimal TotalAmount { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        // Quan hệ 1-nhiều tới chi tiết công thợ và phụ tùng
+        // --- CÁC CỘT BỔ SUNG TỪ BA ---
+        public DateTime? ExpectedDeliveryTime { get; set; }
+
+        public decimal DiscountAmount { get; set; } = 0;
+
+        public decimal TaxAmount { get; set; } = 0;
+
+        public decimal FinalAmount { get; set; } = 0;
+
+        [MaxLength(500)]
+        public string? Note { get; set; }
+
+        [MaxLength(255)]
+        public string? CancellationReason { get; set; }
+
         public virtual ICollection<RepairOrderServiceDetail> OrderServices { get; set; } = new List<RepairOrderServiceDetail>();
         public virtual ICollection<RepairOrderPartDetail> OrderParts { get; set; } = new List<RepairOrderPartDetail>();
     }

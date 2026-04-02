@@ -22,7 +22,9 @@ namespace SmartGarage.Services
                 Id = s.Id,
                 ServiceName = s.ServiceName ?? string.Empty,
                 Price = s.Price,
-                Description = s.Description ?? string.Empty
+                Description = s.Description ?? string.Empty,
+                EstimatedTime = s.EstimatedTime,
+                IsActive = s.IsActive
             }).ToListAsync();
         }
 
@@ -36,7 +38,9 @@ namespace SmartGarage.Services
                 Id = service.Id,
                 ServiceName = service.ServiceName ?? string.Empty,
                 Price = service.Price,
-                Description = service.Description ?? string.Empty
+                Description = service.Description ?? string.Empty,
+                EstimatedTime = service.EstimatedTime,
+                IsActive = service.IsActive
             };
         }
 
@@ -46,7 +50,9 @@ namespace SmartGarage.Services
             {
                 ServiceName = request.ServiceName ?? string.Empty,
                 Price = request.Price,
-                Description = request.Description ?? string.Empty
+                Description = request.Description ?? string.Empty,
+                EstimatedTime = request.EstimatedTime,
+                IsActive = request.IsActive
             };
 
             _context.Services.Add(service);
@@ -57,7 +63,9 @@ namespace SmartGarage.Services
                 Id = service.Id,
                 ServiceName = service.ServiceName ?? string.Empty,
                 Price = service.Price,
-                Description = service.Description ?? string.Empty
+                Description = service.Description ?? string.Empty,
+                EstimatedTime = service.EstimatedTime,
+                IsActive = service.IsActive
             };
         }
 
@@ -69,6 +77,8 @@ namespace SmartGarage.Services
             service.ServiceName = request.ServiceName ?? string.Empty;
             service.Price = request.Price;
             service.Description = request.Description ?? string.Empty;
+            service.EstimatedTime = request.EstimatedTime;
+            service.IsActive = request.IsActive;
 
             await _context.SaveChangesAsync();
             return true;

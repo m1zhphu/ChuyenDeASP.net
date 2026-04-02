@@ -27,7 +27,11 @@ namespace SmartGarage.Services
                 AdvisorId = request.AdvisorId,
                 CurrentOdometer = request.CurrentOdometer,
                 Status = "InProgress",
-                TotalAmount = 0
+                TotalAmount = 0,
+                ExpectedDeliveryTime = request.ExpectedDeliveryTime,
+                DiscountAmount = request.DiscountAmount,
+                TaxAmount = request.TaxAmount,
+                Note = request.Note
             };
 
             decimal total = 0;
@@ -46,7 +50,6 @@ namespace SmartGarage.Services
                 }
                 else
                 {
-                    // Chặn lỗi: Truyền mã dịch vụ tào lao
                     return new { success = false, message = $"Không tìm thấy dịch vụ với mã {sId} trong hệ thống." };
                 }
             }
@@ -63,24 +66,38 @@ namespace SmartGarage.Services
                     {
                         PartId = part.Id,
                         Quantity = pItem.Quantity,
-                        ActualPrice = part.UnitPrice
+                        ActualPrice = part.UnitPrice,
+                        Note = pItem.Note,
+                        DiscountPercent = pItem.DiscountPercent
                     });
 
                     part.StockQuantity -= pItem.Quantity;
-                    total += (part.UnitPrice * pItem.Quantity);
+
+                    // Tính tiền linh kiện có kèm giảm giá %
+                    decimal subTotal = (part.UnitPrice * pItem.Quantity) * (1 - pItem.DiscountPercent / 100m);
+                    total += subTotal;
                 }
                 else
                 {
-                    // Chặn lỗi: Truyền mã phụ tùng tào lao
                     return new { success = false, message = $"Không tìm thấy phụ tùng với mã {pItem.PartId} trong hệ thống." };
                 }
             }
 
             order.TotalAmount = total;
+
+            // Logic tính tiền cuối cùng: Tổng - Giảm giá + Thuế
+            order.FinalAmount = order.TotalAmount - order.DiscountAmount + order.TaxAmount;
+
             _context.RepairOrders.Add(order);
             await _context.SaveChangesAsync();
 
-            return new { success = true, orderCode = order.OrderCode, totalAmount = order.TotalAmount };
+            return new
+            {
+                success = true,
+                orderCode = order.OrderCode,
+                totalAmount = order.TotalAmount,
+                finalAmount = order.FinalAmount
+            };
         }
 
         public async Task<RepairOrderDetailResponseDTO?> GetOrderDetailsAsync(string orderCode)
@@ -102,6 +119,11 @@ namespace SmartGarage.Services
                 CreatedAt = order.CreatedAt,
                 Status = order.Status,
                 TotalAmount = order.TotalAmount,
+                DiscountAmount = order.DiscountAmount,
+                TaxAmount = order.TaxAmount,
+                FinalAmount = order.FinalAmount,
+                ExpectedDeliveryTime = order.ExpectedDeliveryTime,
+                Note = order.Note,
                 CustomerName = order.Vehicle.Customer.FullName ?? string.Empty,
                 PhoneNumber = order.Vehicle.Customer.PhoneNumber ?? string.Empty,
                 LicensePlate = order.Vehicle.LicensePlate ?? string.Empty,
@@ -115,10 +137,13 @@ namespace SmartGarage.Services
                 {
                     PartName = op.Part?.PartName ?? "Phụ tùng không xác định",
                     Quantity = op.Quantity,
-                    ActualPrice = op.ActualPrice
+                    ActualPrice = op.ActualPrice,
+                    Note = op.Note,
+                    DiscountPercent = op.DiscountPercent
                 }).ToList()
             };
         }
+
         public async Task<object> ProcessPaymentAsync(PaymentRequestDTO request)
         {
             var order = await _context.RepairOrders
@@ -139,6 +164,13 @@ namespace SmartGarage.Services
 
             // 2. Cập nhật trạng thái hóa đơn
             order.Status = "Completed";
+
+            // 3. Logic lưu vết: Cập nhật ngày bảo dưỡng cuối cùng cho xe
+            var vehicle = await _context.Vehicles.FindAsync(order.VehicleId);
+            if (vehicle != null)
+            {
+                vehicle.LastServiceDate = DateTime.Now;
+            }
 
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync();

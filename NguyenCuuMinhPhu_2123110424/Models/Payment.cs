@@ -12,9 +12,10 @@ namespace SmartGarage.Models
         [ForeignKey("RepairOrderId")]
         public virtual RepairOrder RepairOrder { get; set; } = null!;
 
-        public decimal AmountPaid { get; set; } // Số tiền khách đã trả
+        public decimal AmountPaid { get; set; }
 
-        public string PaymentMethod { get; set; } = "Cash"; // Tiền mặt, Chuyển khoản...
+        [MaxLength(50)]
+        public string PaymentMethod { get; set; } = "Cash";
 
         public DateTime PaymentDate { get; set; } = DateTime.Now;
     }

@@ -16,8 +16,20 @@ namespace SmartGarage.Models
         [Required, MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
 
-        public string Role { get; set; } = "Staff"; // Admin, Advisor, Mechanic
+        [MaxLength(50)]
+        public string Role { get; set; } = "Advisor";
 
         public bool IsActive { get; set; } = true;
+
+        // --- CÁC CỘT BỔ SUNG TỪ BA ---
+        [MaxLength(100)]
+        public string? Email { get; set; }
+
+        [MaxLength(15)]
+        public string? PhoneNumber { get; set; }
+
+        public DateTime? LastLogin { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
     }
 }

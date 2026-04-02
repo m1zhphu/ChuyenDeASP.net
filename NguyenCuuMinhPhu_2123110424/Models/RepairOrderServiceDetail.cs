@@ -16,8 +16,8 @@ namespace SmartGarage.Models
         [ForeignKey("ServiceId")]
         public virtual Service Service { get; set; } = null!;
 
-        public Guid MechanicId { get; set; } // ID của thợ máy thực hiện
+        public Guid? MechanicId { get; set; } // Đổi thành Guid? (nullable) vì lúc mới tạo phiếu có thể chưa phân thợ ngay
 
-        public decimal ActualPrice { get; set; } // Giá lúc làm (để lưu vết nếu sau này giá dịch vụ thay đổi)
+        public decimal ActualPrice { get; set; }
     }
 }

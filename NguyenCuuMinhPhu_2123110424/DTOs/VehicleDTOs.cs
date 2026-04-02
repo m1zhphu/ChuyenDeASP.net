@@ -8,6 +8,7 @@
         public string Model { get; set; } = string.Empty;
         public string? VinNumber { get; set; }
         public Guid CustomerId { get; set; }
+        public DateTime? LastServiceDate { get; set; }
     }
 
     public class VehicleRequestDTO

@@ -23,8 +23,9 @@ namespace SmartGarage.Services
                 LicensePlate = v.LicensePlate ?? string.Empty,
                 Make = v.Make ?? string.Empty,
                 Model = v.Model ?? string.Empty,
-                VinNumber = v.VinNumber, // Có thể Null
-                CustomerId = v.CustomerId
+                VinNumber = v.VinNumber,
+                CustomerId = v.CustomerId,
+                LastServiceDate = v.LastServiceDate
             }).ToListAsync();
         }
 
@@ -38,8 +39,9 @@ namespace SmartGarage.Services
                 LicensePlate = v.LicensePlate ?? string.Empty,
                 Make = v.Make ?? string.Empty,
                 Model = v.Model ?? string.Empty,
-                VinNumber = v.VinNumber, // Có thể Null
-                CustomerId = v.CustomerId
+                VinNumber = v.VinNumber,
+                CustomerId = v.CustomerId,
+                LastServiceDate = v.LastServiceDate
             };
         }
 
@@ -47,7 +49,6 @@ namespace SmartGarage.Services
         {
             var safeLicensePlate = request.LicensePlate ?? string.Empty;
 
-            // Kiểm tra trùng biển số
             var exists = await _context.Vehicles.AnyAsync(v => v.LicensePlate == safeLicensePlate);
             if (exists) return new { success = false, message = "Biển số xe này đã tồn tại trong hệ thống!" };
 
@@ -73,7 +74,6 @@ namespace SmartGarage.Services
 
             var safeLicensePlate = request.LicensePlate ?? string.Empty;
 
-            // Kiểm tra trùng biển số (ngoại trừ chính chiếc xe đang sửa)
             var duplicate = await _context.Vehicles.AnyAsync(v => v.LicensePlate == safeLicensePlate && v.Id != id);
             if (duplicate) return new { success = false, message = "Biển số xe mới bị trùng với xe khác!" };
 

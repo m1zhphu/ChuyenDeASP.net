@@ -24,6 +24,8 @@ namespace SmartGarage.Services
                     FullName = c.FullName ?? string.Empty,
                     PhoneNumber = c.PhoneNumber ?? string.Empty,
                     Address = c.Address ?? string.Empty,
+                    Email = c.Email,
+                    Gender = c.Gender,
                     CreatedAt = c.CreatedAt
                 }).ToListAsync();
         }
@@ -39,6 +41,8 @@ namespace SmartGarage.Services
                 FullName = customer.FullName ?? string.Empty,
                 PhoneNumber = customer.PhoneNumber ?? string.Empty,
                 Address = customer.Address ?? string.Empty,
+                Email = customer.Email,
+                Gender = customer.Gender,
                 CreatedAt = customer.CreatedAt
             };
         }
@@ -50,6 +54,8 @@ namespace SmartGarage.Services
                 FullName = request.FullName ?? string.Empty,
                 PhoneNumber = request.PhoneNumber ?? string.Empty,
                 Address = request.Address ?? string.Empty,
+                Email = request.Email,
+                Gender = request.Gender,
                 CreatedAt = DateTime.Now
             };
 
@@ -62,6 +68,8 @@ namespace SmartGarage.Services
                 FullName = newCustomer.FullName ?? string.Empty,
                 PhoneNumber = newCustomer.PhoneNumber ?? string.Empty,
                 Address = newCustomer.Address ?? string.Empty,
+                Email = newCustomer.Email,
+                Gender = newCustomer.Gender,
                 CreatedAt = newCustomer.CreatedAt
             };
         }
@@ -74,6 +82,8 @@ namespace SmartGarage.Services
             customer.FullName = request.FullName ?? string.Empty;
             customer.PhoneNumber = request.PhoneNumber ?? string.Empty;
             customer.Address = request.Address ?? string.Empty;
+            customer.Email = request.Email;
+            customer.Gender = request.Gender;
 
             await _context.SaveChangesAsync();
             return true;
