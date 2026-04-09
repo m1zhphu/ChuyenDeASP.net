@@ -7,15 +7,18 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["NguyenCuuMinhPhu_2123110424/NguyenCuuMinhPhu_2123110424.csproj", "NguyenCuuMinhPhu_2123110424/"]
-RUN dotnet restore "./NguyenCuuMinhPhu_2123110424/NguyenCuuMinhPhu_2123110424.csproj"
+
+# ĐÃ SỬA: Copy thẳng file .csproj (không có thư mục con)
+COPY ["NguyenCuuMinhPhu_2123110424.csproj", "./"]
+RUN dotnet restore "./NguyenCuuMinhPhu_2123110424.csproj"
+
+# ĐÃ SỬA: Copy toàn bộ code vào thư mục gốc /src
 COPY . .
-WORKDIR "/src/NguyenCuuMinhPhu_2123110424"
+WORKDIR "/src"
 RUN dotnet build "./NguyenCuuMinhPhu_2123110424.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
