@@ -48,5 +48,11 @@ namespace SmartGarage.Controllers
             if (!success) return NotFound(new { message = "Không tìm thấy xe để xóa." });
             return Ok(new { message = "Xóa thành công." });
         }
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string keyword)
+        {
+            var results = await _vehicleService.SearchAsync(keyword);
+            return Ok(results);
+        }
     }
 }

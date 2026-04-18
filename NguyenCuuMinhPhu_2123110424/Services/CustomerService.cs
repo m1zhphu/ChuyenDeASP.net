@@ -56,7 +56,8 @@ namespace SmartGarage.Services
                 Address = request.Address ?? string.Empty,
                 Email = request.Email,
                 Gender = request.Gender,
-                CreatedAt = DateTime.Now
+                // CHỈ CẦN SỬA DÒNG NÀY: Thêm chữ Utc vào trước Now
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.Customers.Add(newCustomer);
@@ -97,6 +98,29 @@ namespace SmartGarage.Services
             _context.Customers.Remove(customer);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<IEnumerable<CustomerResponseDTO>> SearchCustomersAsync(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword)) return new List<CustomerResponseDTO>();
+
+            var lowerKeyword = keyword.ToLower();
+
+            return await _context.Customers
+                .Where(c => (c.PhoneNumber != null && c.PhoneNumber.Contains(keyword)) ||
+                            (c.FullName != null && c.FullName.ToLower().Contains(lowerKeyword)))
+                .Select(c => new CustomerResponseDTO
+                {
+                    Id = c.Id,
+                    FullName = c.FullName ?? string.Empty,
+                    PhoneNumber = c.PhoneNumber ?? string.Empty,
+                    Address = c.Address ?? string.Empty,
+                    Email = c.Email,
+                    Gender = c.Gender,
+                    CreatedAt = c.CreatedAt
+                })
+                .Take(10) // Giới hạn trả về 10 kết quả để tối ưu tốc độ
+                .ToListAsync();
         }
     }
 }

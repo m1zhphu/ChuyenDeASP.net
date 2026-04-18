@@ -29,7 +29,7 @@ namespace SmartGarage.Services
             if (!user.IsActive) return new { success = false, message = "Tài khoản này đã bị khóa." };
 
             // Cập nhật lần đăng nhập cuối
-            user.LastLogin = DateTime.Now;
+            user.LastLogin = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             // 2. Tạo Claims (Những thông tin được nhúng vào trong Token)

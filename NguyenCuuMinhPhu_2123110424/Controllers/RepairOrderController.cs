@@ -35,5 +35,21 @@ namespace SmartGarage.Controllers
             var result = await _orderService.ProcessPaymentAsync(request);
             return Ok(result);
         }
+        // THÊM HÀM NÀY ĐỂ LẤY DANH SÁCH LỆNH SỬA CHỮA
+        [HttpGet]
+        public async Task<IActionResult> GetAllOrders()
+        {
+            try
+            {
+                // Gọi hàm lấy danh sách từ Service. 
+                // (Lưu ý: Tên hàm GetAllAsync có thể khác tùy vào cách bạn đặt trong IRepairOrderService)
+                var orders = await _orderService.GetAllAsync();
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Lỗi khi lấy danh sách: " + ex.Message });
+            }
+        }
     }
 }

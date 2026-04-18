@@ -7,5 +7,6 @@ namespace SmartGarage.Interface
         Task<object> CreateOrderAsync(CreateRepairOrderRequest request);
         Task<RepairOrderDetailResponseDTO?> GetOrderDetailsAsync(string orderCode);
         Task<object> ProcessPaymentAsync(PaymentRequestDTO request);
+        Task<IEnumerable<object>> GetAllAsync();
     }
 }

@@ -58,7 +58,7 @@ namespace SmartGarage.Services
                 Email = request.Email,
                 PhoneNumber = request.PhoneNumber,
                 IsActive = true,
-                UpdatedAt = DateTime.Now
+                UpdatedAt = DateTime.UtcNow
             };
 
             _context.Users.Add(user);
@@ -72,7 +72,7 @@ namespace SmartGarage.Services
             if (user == null) return false;
 
             user.IsActive = isActive;
-            user.UpdatedAt = DateTime.Now;
+            user.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return true;
         }
@@ -83,7 +83,7 @@ namespace SmartGarage.Services
             if (user == null || user.PasswordHash != request.OldPassword) return false;
 
             user.PasswordHash = request.NewPassword;
-            user.UpdatedAt = DateTime.Now;
+            user.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return true;
         }

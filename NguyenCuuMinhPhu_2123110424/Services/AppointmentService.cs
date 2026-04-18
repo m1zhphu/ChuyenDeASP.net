@@ -17,12 +17,11 @@ namespace SmartGarage.Services
 
         public async Task<object> CreateAsync(AppointmentRequestDTO request)
         {
-            // 1. Kiểm tra khách hàng có tồn tại không
             var customer = await _context.Customers.FindAsync(request.CustomerId);
             if (customer == null) return new { success = false, message = "Không tìm thấy khách hàng." };
 
-            // 2. Ràng buộc logic: Không cho đặt lịch trong quá khứ
-            if (request.AppointmentDate < DateTime.Now)
+            // 1. Dùng UtcNow để so sánh thay vì Now
+            if (request.AppointmentDate < DateTime.UtcNow)
             {
                 return new { success = false, message = "Ngày hẹn không được nhỏ hơn thời gian hiện tại." };
             }
@@ -31,13 +30,15 @@ namespace SmartGarage.Services
             {
                 CustomerId = request.CustomerId,
                 VehicleId = request.VehicleId,
-                AppointmentDate = request.AppointmentDate,
+                // 2. Ép kiểu thời gian khách gửi về chuẩn Utc để Postgres chấp nhận
+                AppointmentDate = DateTime.SpecifyKind(request.AppointmentDate, DateTimeKind.Utc),
                 ExpectedServices = request.ExpectedServices,
-                Status = "Pending" // Mặc định khi mới đặt là chờ xác nhận
+                Status = "Pending",
+                CreatedAt = DateTime.UtcNow // Luôn dùng UtcNow
             };
 
             _context.Appointments.Add(appointment);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(); // Sẽ không còn lỗi ở đây nữa
 
             return new { success = true, id = appointment.Id, message = "Đặt lịch thành công." };
         }

@@ -17,87 +17,96 @@ namespace SmartGarage.Services
 
         public async Task<object> CreateOrderAsync(CreateRepairOrderRequest request)
         {
-            var vehicle = await _context.Vehicles.FirstOrDefaultAsync(v => v.LicensePlate == request.LicensePlate);
-            if (vehicle == null) return new { success = false, message = "Không tìm thấy xe này trong hệ thống." };
+            // Bọc Transaction trong ExecutionStrategy để tương thích với EnableRetryOnFailure
+            var strategy = _context.Database.CreateExecutionStrategy();
 
-            var order = new RepairOrder
+            // ĐÃ SỬA LỖI: Thêm <object> để C# hiểu kiểu dữ liệu trả về
+            return await strategy.ExecuteAsync<object>(async () =>
             {
-                OrderCode = $"RO-{DateTime.Now:yyyyMMddHHmm}",
-                VehicleId = vehicle.Id,
-                AdvisorId = request.AdvisorId,
-                CurrentOdometer = request.CurrentOdometer,
-                Status = "InProgress",
-                TotalAmount = 0,
-                ExpectedDeliveryTime = request.ExpectedDeliveryTime,
-                DiscountAmount = request.DiscountAmount,
-                TaxAmount = request.TaxAmount,
-                Note = request.Note
-            };
-
-            decimal total = 0;
-
-            foreach (var sId in request.ServiceIds)
-            {
-                var service = await _context.Services.FindAsync(sId);
-                if (service != null)
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    order.OrderServices.Add(new RepairOrderServiceDetail
+                    var vehicle = await _context.Vehicles.FirstOrDefaultAsync(v => v.LicensePlate == request.LicensePlate);
+                    if (vehicle == null) return new { success = false, message = "Không tìm thấy xe này trong hệ thống." };
+
+                    var order = new RepairOrder
                     {
-                        ServiceId = service.Id,
-                        ActualPrice = service.Price
-                    });
-                    total += service.Price;
-                }
-                else
-                {
-                    return new { success = false, message = $"Không tìm thấy dịch vụ với mã {sId} trong hệ thống." };
-                }
-            }
+                        OrderCode = $"RO-{DateTime.UtcNow:yyyyMMddHHmm}",
+                        VehicleId = vehicle.Id,
+                        AdvisorId = request.AdvisorId,
+                        CurrentOdometer = request.CurrentOdometer,
+                        Status = "InProgress",
+                        TotalAmount = 0,
+                        ExpectedDeliveryTime = request.ExpectedDeliveryTime.HasValue
+                            ? DateTime.SpecifyKind(request.ExpectedDeliveryTime.Value, DateTimeKind.Utc)
+                            : null,
+                        DiscountAmount = request.DiscountAmount,
+                        TaxAmount = request.TaxAmount,
+                        Note = request.Note,
+                        CreatedAt = DateTime.UtcNow
+                    };
 
-            foreach (var pItem in request.SelectedParts)
-            {
-                var part = await _context.Parts.FindAsync(pItem.PartId);
-                if (part != null)
-                {
-                    if (part.StockQuantity < pItem.Quantity)
-                        return new { success = false, message = $"Phụ tùng {part.PartName} không đủ số lượng trong kho." };
+                    decimal total = 0;
 
-                    order.OrderParts.Add(new RepairOrderPartDetail
+                    // 1. Xử lý Dịch vụ & Giao việc
+                    foreach (var sItem in request.ServiceIds)
                     {
-                        PartId = part.Id,
-                        Quantity = pItem.Quantity,
-                        ActualPrice = part.UnitPrice,
-                        Note = pItem.Note,
-                        DiscountPercent = pItem.DiscountPercent
-                    });
+                        var service = await _context.Services.FindAsync(sItem.ServiceId);
+                        if (service != null)
+                        {
+                            order.OrderServices.Add(new RepairOrderServiceDetail
+                            {
+                                ServiceId = service.Id,
+                                MechanicId = sItem.MechanicId,
+                                ActualPrice = service.Price,
+                                Status = "Pending"
+                            });
+                            total += service.Price;
+                        }
+                    }
 
-                    part.StockQuantity -= pItem.Quantity;
+                    // 2. Xử lý Phụ tùng
+                    foreach (var pItem in request.SelectedParts)
+                    {
+                        var part = await _context.Parts.FindAsync(pItem.PartId);
+                        if (part != null)
+                        {
+                            if (part.StockQuantity < pItem.Quantity)
+                            {
+                                await transaction.RollbackAsync();
+                                return new { success = false, message = $"Phụ tùng {part.PartName} không đủ kho." };
+                            }
 
-                    // Tính tiền linh kiện có kèm giảm giá %
-                    decimal subTotal = (part.UnitPrice * pItem.Quantity) * (1 - pItem.DiscountPercent / 100m);
-                    total += subTotal;
+                            order.OrderParts.Add(new RepairOrderPartDetail
+                            {
+                                PartId = part.Id,
+                                Quantity = pItem.Quantity,
+                                ActualPrice = part.UnitPrice,
+                                Note = pItem.Note,
+                                DiscountPercent = pItem.DiscountPercent
+                            });
+
+                            part.StockQuantity -= pItem.Quantity;
+                            total += (part.UnitPrice * pItem.Quantity) * (1 - pItem.DiscountPercent / 100m);
+                        }
+                    }
+
+                    order.TotalAmount = total;
+                    order.FinalAmount = order.TotalAmount - order.DiscountAmount + order.TaxAmount;
+
+                    _context.RepairOrders.Add(order);
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+
+                    return new { success = true, orderCode = order.OrderCode, finalAmount = order.FinalAmount };
                 }
-                else
+                catch (Exception ex)
                 {
-                    return new { success = false, message = $"Không tìm thấy phụ tùng với mã {pItem.PartId} trong hệ thống." };
+                    await transaction.RollbackAsync();
+                    return new { success = false, message = "Lỗi hệ thống: " + ex.Message };
                 }
-            }
-
-            order.TotalAmount = total;
-
-            // Logic tính tiền cuối cùng: Tổng - Giảm giá + Thuế
-            order.FinalAmount = order.TotalAmount - order.DiscountAmount + order.TaxAmount;
-
-            _context.RepairOrders.Add(order);
-            await _context.SaveChangesAsync();
-
-            return new
-            {
-                success = true,
-                orderCode = order.OrderCode,
-                totalAmount = order.TotalAmount,
-                finalAmount = order.FinalAmount
-            };
+            });
         }
 
         public async Task<RepairOrderDetailResponseDTO?> GetOrderDetailsAsync(string orderCode)
@@ -159,7 +168,8 @@ namespace SmartGarage.Services
                 RepairOrderId = order.Id,
                 AmountPaid = request.AmountPaid,
                 PaymentMethod = request.PaymentMethod,
-                PaymentDate = DateTime.Now
+                // Thay Now thành UtcNow
+                PaymentDate = DateTime.UtcNow
             };
 
             // 2. Cập nhật trạng thái hóa đơn
@@ -169,13 +179,35 @@ namespace SmartGarage.Services
             var vehicle = await _context.Vehicles.FindAsync(order.VehicleId);
             if (vehicle != null)
             {
-                vehicle.LastServiceDate = DateTime.Now;
+                // Thay Now thành UtcNow
+                vehicle.LastServiceDate = DateTime.UtcNow;
             }
 
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync();
 
             return new { success = true, message = "Thanh toán thành công. Cảm ơn quý khách!" };
+        }
+
+        public async Task<IEnumerable<object>> GetAllAsync()
+        {
+            // Nối bảng để lấy thêm Tên Khách và Biển số ra màn hình danh sách
+            return await _context.RepairOrders
+                .Include(ro => ro.Vehicle)
+                    .ThenInclude(v => v.Customer)
+                .OrderByDescending(ro => ro.CreatedAt) // Sắp xếp lệnh mới nhất lên đầu
+                .Select(ro => new
+                {
+                    id = ro.Id,
+                    orderCode = ro.OrderCode,
+                    licensePlate = ro.Vehicle != null ? ro.Vehicle.LicensePlate : "---",
+                    customerName = (ro.Vehicle != null && ro.Vehicle.Customer != null) ? ro.Vehicle.Customer.FullName : "Khách lẻ",
+                    totalAmount = ro.TotalAmount,
+                    finalAmount = ro.FinalAmount,
+                    status = ro.Status,
+                    isPaid = ro.Status == "Completed"
+                })
+                .ToListAsync();
         }
     }
 }

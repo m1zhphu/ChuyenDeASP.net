@@ -28,7 +28,9 @@ namespace SmartGarage.Services
                 SupplierId = request.SupplierId,
                 UserId = request.UserId,
                 Note = request.Note,
-                TotalAmount = 0
+                TotalAmount = 0,
+                // BẮT BUỘC THÊM DÒNG NÀY ĐỂ TRÁNH LỖI POSTGRESQL
+                CreatedAt = DateTime.UtcNow
             };
 
             decimal totalAmount = 0;

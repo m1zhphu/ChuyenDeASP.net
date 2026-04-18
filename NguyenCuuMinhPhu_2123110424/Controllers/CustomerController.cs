@@ -52,5 +52,11 @@ namespace SmartGarage.Controllers
             if (!success) return NotFound(new { message = "Không tìm thấy khách hàng để xóa." });
             return Ok(new { message = "Xóa thành công." });
         }
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string keyword)
+        {
+            var customers = await _customerService.SearchCustomersAsync(keyword);
+            return Ok(customers);
+        }
     }
 }

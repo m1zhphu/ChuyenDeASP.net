@@ -12,7 +12,7 @@
         public decimal TaxAmount { get; set; } = 0;
         public string? Note { get; set; }
 
-        public List<Guid> ServiceIds { get; set; } = new();
+        public List<ServiceSelectionDTO> ServiceIds { get; set; } = new();
         public List<PartSelectionDTO> SelectedParts { get; set; } = new();
     }
 
@@ -66,5 +66,10 @@
 
         // Tự động tính thành tiền sau khi trừ % giảm giá
         public decimal SubTotal => (Quantity * ActualPrice) * (1 - DiscountPercent / 100m);
+    }
+    public class ServiceSelectionDTO
+    {
+        public Guid ServiceId { get; set; }
+        public Guid? MechanicId { get; set; } // Advisor chọn thợ máy ở đây
     }
 }

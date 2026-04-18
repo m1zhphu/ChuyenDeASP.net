@@ -20,7 +20,12 @@ namespace NguyenCuuMinhPhu_2123110424
             // 1. KẾT NỐI DATABASE
             // ==============================================================
             builder.Services.AddDbContext<GarageDbContext>(options =>
-                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+                npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,            // Thử lại tối đa 5 lần
+                    maxRetryDelay: TimeSpan.FromSeconds(10), // Mỗi lần cách nhau tối đa 10 giây
+                    errorCodesToAdd: null))      // Các mã lỗi bổ sung (nếu có)
+            );
 
             // ==============================================================
             // 2. ĐĂNG KÝ DEPENDENCY INJECTION (DI)
@@ -37,10 +42,12 @@ namespace NguyenCuuMinhPhu_2123110424
             builder.Services.AddScoped<IVoucherService, VoucherService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<DashboardService>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
 
+            builder.Services.AddCors();
             // ==============================================================
             // 3. CẤU HÌNH SWAGGER (Tích hợp nút Authorize nhập Token)
             // ==============================================================
@@ -96,7 +103,10 @@ namespace NguyenCuuMinhPhu_2123110424
             });
 
             var app = builder.Build();
-
+            app.UseCors(builder => builder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader());
             // ==============================================================
             // 5. TỰ ĐỘNG TẠO BẢNG (MIGRATION) & NẠP DỮ LIỆU MẪU
             // ==============================================================

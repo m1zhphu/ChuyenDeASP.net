@@ -96,5 +96,25 @@ namespace SmartGarage.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<IEnumerable<VehicleResponseDTO>> SearchAsync(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword)) return new List<VehicleResponseDTO>();
+            var lowerKeyword = keyword.ToLower();
+
+            return await _context.Vehicles
+                .Where(v => v.LicensePlate != null && v.LicensePlate.ToLower().Contains(lowerKeyword))
+                .Select(v => new VehicleResponseDTO
+                {
+                    Id = v.Id,
+                    LicensePlate = v.LicensePlate ?? string.Empty,
+                    Make = v.Make ?? string.Empty,
+                    Model = v.Model ?? string.Empty,
+                    VinNumber = v.VinNumber,
+                    CustomerId = v.CustomerId,
+                    LastServiceDate = v.LastServiceDate
+                })
+                .Take(10).ToListAsync();
+        }
     }
 }

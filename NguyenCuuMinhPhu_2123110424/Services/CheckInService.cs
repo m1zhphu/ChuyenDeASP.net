@@ -16,24 +16,35 @@ namespace SmartGarage.Services
 
         public async Task<CheckInResponseDTO> ProcessCheckInAsync(string licensePlate)
         {
-            // Dùng Include để kéo luôn thông tin Khách hàng của chiếc xe đó lên
+            // Chuẩn hóa biển số: Viết hoa, xóa dấu cách, gạch ngang, dấu chấm
+            string normalizedInput = licensePlate.ToUpper().Replace("-", "").Replace(".", "").Replace(" ", "");
+
+            // Tìm xe và bao gồm thông tin khách hàng
             var vehicle = await _context.Vehicles
                 .Include(v => v.Customer)
-                .FirstOrDefaultAsync(v => v.LicensePlate == licensePlate);
+                .FirstOrDefaultAsync(v => (v.LicensePlate ?? "").Replace("-", "").Replace(".", "").Replace(" ", "").ToUpper() == normalizedInput);
 
             if (vehicle != null && vehicle.Customer != null)
             {
+                // Tìm lịch hẹn trong ngày hôm nay (Dùng UtcNow để khớp với DB Render)
+                var today = DateTime.UtcNow.Date;
+                var appointment = await _context.Appointments
+                    .FirstOrDefaultAsync(a => a.VehicleId == vehicle.Id
+                                           && a.AppointmentDate.Date == today
+                                           && a.Status != "Cancelled");
+
                 return new CheckInResponseDTO
                 {
                     IsExisting = true,
-                    Message = $"Đã tìm thấy xe. Xin chào khách hàng {vehicle.Customer.FullName}!",
+                    Message = $"Chào mừng {vehicle.Customer.FullName} quay trở lại!",
                     CustomerId = vehicle.Customer.Id,
-                    CustomerName = vehicle.Customer.FullName ?? string.Empty,
-                    PhoneNumber = vehicle.Customer.PhoneNumber ?? string.Empty,
+                    CustomerName = vehicle.Customer.FullName ?? "",
+                    PhoneNumber = vehicle.Customer.PhoneNumber ?? "",
                     VehicleId = vehicle.Id,
-                    LicensePlate = vehicle.LicensePlate ?? string.Empty,
-                    Make = vehicle.Make ?? string.Empty,
-                    Model = vehicle.Model ?? string.Empty
+                    LicensePlate = vehicle.LicensePlate ?? "",
+                    Make = vehicle.Make ?? "",
+                    Model = vehicle.Model ?? "",
+                    ActiveAppointmentId = appointment?.Id // Gán ID nếu tìm thấy lịch hẹn
                 };
             }
 

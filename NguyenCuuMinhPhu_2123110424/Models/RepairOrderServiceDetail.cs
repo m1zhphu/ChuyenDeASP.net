@@ -19,5 +19,8 @@ namespace SmartGarage.Models
         public Guid? MechanicId { get; set; } // Đổi thành Guid? (nullable) vì lúc mới tạo phiếu có thể chưa phân thợ ngay
 
         public decimal ActualPrice { get; set; }
+        // THÊM TRƯỜNG NÀY: Để quản lý trạng thái từng Task
+        [MaxLength(20)]
+        public string Status { get; set; } = "Pending"; // Pending, InProgress, Completed
     }
 }

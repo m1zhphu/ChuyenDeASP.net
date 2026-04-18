@@ -10,5 +10,6 @@ namespace SmartGarage.Interface
         Task<object> CreateAsync(VehicleRequestDTO request);
         Task<object> UpdateAsync(Guid id, VehicleRequestDTO request);
         Task<bool> DeleteAsync(Guid id);
+        Task<IEnumerable<VehicleResponseDTO>> SearchAsync(string keyword);
     }
 }

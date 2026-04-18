@@ -9,5 +9,8 @@ namespace SmartGarage.Interface
         Task<CustomerResponseDTO> CreateCustomerAsync(CustomerRequestDTO request);
         Task<bool> UpdateCustomerAsync(Guid id, CustomerRequestDTO request);
         Task<bool> DeleteCustomerAsync(Guid id);
+
+        // Hàm tìm kiếm khách hàng
+        Task<IEnumerable<CustomerResponseDTO>> SearchCustomersAsync(string keyword);
     }
 }
