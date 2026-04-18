@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using SmartGarage.Data;
 using SmartGarage.Interface;
 using SmartGarage.Services;
+using SmartGarage.Hubs; // BẮT BUỘC THÊM DÒNG NÀY ĐỂ NHẬN DIỆN HUB
 using System.Text;
 
 namespace NguyenCuuMinhPhu_2123110424
@@ -22,9 +23,9 @@ namespace NguyenCuuMinhPhu_2123110424
             builder.Services.AddDbContext<GarageDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
                 npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,            // Thử lại tối đa 5 lần
-                    maxRetryDelay: TimeSpan.FromSeconds(10), // Mỗi lần cách nhau tối đa 10 giây
-                    errorCodesToAdd: null))      // Các mã lỗi bổ sung (nếu có)
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorCodesToAdd: null))
             );
 
             // ==============================================================
@@ -47,9 +48,12 @@ namespace NguyenCuuMinhPhu_2123110424
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
 
+            // Đăng ký SignalR
+            builder.Services.AddSignalR();
             builder.Services.AddCors();
+
             // ==============================================================
-            // 3. CẤU HÌNH SWAGGER (Tích hợp nút Authorize nhập Token)
+            // 3. CẤU HÌNH SWAGGER
             // ==============================================================
             builder.Services.AddSwaggerGen(c =>
             {
@@ -103,10 +107,17 @@ namespace NguyenCuuMinhPhu_2123110424
             });
 
             var app = builder.Build();
+
+            // ==============================================================
+            // CẤU HÌNH CORS CHO SIGNALR (ĐÃ SỬA)
+            // ==============================================================
             app.UseCors(builder => builder
-                .AllowAnyOrigin()
+                .WithOrigins("http://localhost:5173") // Chỉ định đích danh frontend React
                 .AllowAnyMethod()
-                .AllowAnyHeader());
+                .AllowAnyHeader()
+                .AllowCredentials() // BẮT BUỘC CÓ DÒNG NÀY CHO SIGNALR
+            );
+
             // ==============================================================
             // 5. TỰ ĐỘNG TẠO BẢNG (MIGRATION) & NẠP DỮ LIỆU MẪU
             // ==============================================================
@@ -116,11 +127,7 @@ namespace NguyenCuuMinhPhu_2123110424
                 try
                 {
                     var context = services.GetRequiredService<GarageDbContext>();
-
-                    // ---> ĐÂY LÀ DÒNG THÊM VÀO ĐỂ TỰ ĐỘNG TẠO BẢNG TRÊN RENDER <---
                     context.Database.Migrate();
-
-                    // Nạp dữ liệu mẫu
                     DbSeeder.Seed(context);
                 }
                 catch (Exception ex)
@@ -142,12 +149,16 @@ namespace NguyenCuuMinhPhu_2123110424
 
             app.UseHttpsRedirection();
 
-            // THỨ TỰ BẮT BUỘC: Authentication phải đứng trước Authorization
+            // THỨ TỰ BẮT BUỘC
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
+
+            // MAP HUB SIGNALR CHO ĐƯỜNG DẪN BÊN FRONTEND GỌI VÀO
+            app.MapHub<NotificationHub>("/notificationHub");
+
             app.Run();
         }
     }
-}
+} 

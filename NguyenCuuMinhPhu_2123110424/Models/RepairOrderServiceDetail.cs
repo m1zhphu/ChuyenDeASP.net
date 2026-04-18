@@ -22,5 +22,12 @@ namespace SmartGarage.Models
         // THÊM TRƯỜNG NÀY: Để quản lý trạng thái từng Task
         [MaxLength(20)]
         public string Status { get; set; } = "Pending"; // Pending, InProgress, Completed
+                                                        // THÊM DÒNG NÀY ĐỂ HẾT LỖI Ở CONTROLLER
+        [ForeignKey("MechanicId")]
+        public virtual User? Mechanic { get; set; }
+
+        // THÊM 2 TRƯỜNG NÀY ĐỂ LÀM LỊCH (BƯỚC 2)
+        public DateTime? ActualStartTime { get; set; } // Thời gian thợ bắt đầu làm
+        public DateTime? ActualEndTime { get; set; }   // Thời gian thợ hoàn thành
     }
 }
