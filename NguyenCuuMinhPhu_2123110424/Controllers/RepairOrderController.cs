@@ -51,5 +51,19 @@ namespace SmartGarage.Controllers
                 return BadRequest(new { message = "Lỗi khi lấy danh sách: " + ex.Message });
             }
         }
+        [HttpGet("history/{licensePlate}")]
+        public async Task<IActionResult> GetVehicleHistory(string licensePlate)
+        {
+            try
+            {
+                // Gọi sang Service để lấy lịch sử
+                var history = await _orderService.GetHistoryByLicensePlateAsync(licensePlate);
+                return Ok(history);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Lỗi khi lấy lịch sử: " + ex.Message });
+            }
+        }
     }
 }

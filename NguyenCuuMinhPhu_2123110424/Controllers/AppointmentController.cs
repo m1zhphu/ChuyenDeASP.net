@@ -49,5 +49,25 @@ namespace SmartGarage.Controllers
 
             return Ok(new { message = "Cập nhật trạng thái thành công." });
         }
+
+        [HttpPost("public-book")]
+        public async Task<IActionResult> BookOnline([FromBody] PublicBookingRequestDTO request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var result = await _appointmentService.BookOnlineAsync(request);
+                var successProperty = result.GetType().GetProperty("success");
+                bool isSuccess = (bool)(successProperty?.GetValue(result) ?? false);
+
+                if (!isSuccess) return BadRequest(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
     }
 }

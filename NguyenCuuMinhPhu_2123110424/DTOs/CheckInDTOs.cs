@@ -13,5 +13,6 @@
         public string? Model { get; set; }
         // Thuộc tính mới để sửa lỗi "does not contain a definition"
         public Guid? ActiveAppointmentId { get; set; }
+        public object? MaintenanceHistory { get; set; }
     }
 }

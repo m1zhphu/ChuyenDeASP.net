@@ -23,5 +23,21 @@ namespace SmartGarage.Controllers
             var result = await _checkInService.ProcessCheckInAsync(licensePlate);
             return Ok(result);
         }
+        [HttpPost("quick-onboard")]
+        public async Task<IActionResult> QuickOnboard([FromBody] SmartGarage.DTOs.QuickOnboardRequestDTO request)
+        {
+            if (string.IsNullOrWhiteSpace(request.LicensePlate) || string.IsNullOrWhiteSpace(request.CustomerName))
+                return BadRequest(new { message = "Biển số và Tên khách hàng là bắt buộc." });
+
+            try
+            {
+                var result = await _checkInService.QuickOnboardAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi hệ thống khi tạo hồ sơ.", error = ex.Message });
+            }
+        }
     }
 }

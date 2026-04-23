@@ -91,5 +91,75 @@ namespace SmartGarage.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<object> BookOnlineAsync(PublicBookingRequestDTO request)
+        {
+            if (request.AppointmentDate < DateTime.UtcNow)
+            {
+                return new { success = false, message = "Ngày hẹn không được nhỏ hơn thời gian hiện tại." };
+            }
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            return await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    // 1. Tìm hoặc Tạo Khách Hàng theo SĐT
+                    var customer = await _context.Customers.FirstOrDefaultAsync(c => c.PhoneNumber == request.PhoneNumber);
+                    if (customer == null)
+                    {
+                        customer = new Customer
+                        {
+                            FullName = request.CustomerName,
+                            PhoneNumber = request.PhoneNumber,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.Customers.Add(customer);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    // 2. Tìm hoặc Tạo Xe theo Biển số
+                    string cleanPlate = request.LicensePlate.ToUpper().Trim();
+                    var vehicle = await _context.Vehicles.FirstOrDefaultAsync(v => v.LicensePlate == cleanPlate);
+                    if (vehicle == null)
+                    {
+                        vehicle = new Vehicle
+                        {
+                            LicensePlate = cleanPlate,
+                            CustomerId = customer.Id,
+                            Make = "Chưa cập nhật",
+                            Model = "Chưa cập nhật"
+                        };
+                        _context.Vehicles.Add(vehicle);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    // 3. Tạo Lịch Hẹn
+                    var appointment = new Appointment
+                    {
+                        CustomerId = customer.Id,
+                        VehicleId = vehicle.Id,
+                        AppointmentDate = DateTime.SpecifyKind(request.AppointmentDate, DateTimeKind.Utc),
+                        ExpectedServices = request.ExpectedServices,
+                        Status = "Pending",
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    _context.Appointments.Add(appointment);
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+
+                    return new { success = true, message = "Cảm ơn bạn đã đặt lịch! Gara sẽ sớm liên hệ xác nhận." };
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw new Exception("Lỗi hệ thống khi đặt lịch: " + ex.Message);
+                }
+            });
+        }
     }
 }

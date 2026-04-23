@@ -209,5 +209,27 @@ namespace SmartGarage.Services
                 })
                 .ToListAsync();
         }
+        public async Task<IEnumerable<object>> GetHistoryByLicensePlateAsync(string licensePlate)
+        {
+            string normalizedPlate = licensePlate.ToUpper().Replace("-", "").Replace(".", "").Replace(" ", "");
+
+            return await _context.RepairOrders
+                .Include(ro => ro.Vehicle)
+                .Include(ro => ro.OrderServices).ThenInclude(os => os.Service)
+                .Include(ro => ro.OrderParts).ThenInclude(op => op.Part)
+                .Where(ro => (ro.Vehicle.LicensePlate ?? "").Replace("-", "").Replace(".", "").Replace(" ", "").ToUpper() == normalizedPlate
+                       && ro.Status == "Completed")
+                .OrderByDescending(ro => ro.CreatedAt)
+                .Select(ro => new
+                {
+                    orderCode = ro.OrderCode,
+                    createdAt = ro.CreatedAt,
+                    currentOdometer = ro.CurrentOdometer,
+                    finalAmount = ro.FinalAmount, // <--- ĐẢM BẢO CÓ DÒNG NÀY ĐỂ HIỂN THỊ GIÁ
+                    services = ro.OrderServices.Select(s => new { serviceName = s.Service.ServiceName }).ToList(),
+                    parts = ro.OrderParts.Select(p => new { partName = p.Part.PartName, quantity = p.Quantity }).ToList()
+                })
+                .ToListAsync();
+        }
     }
 }
