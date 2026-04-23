@@ -203,7 +203,7 @@ namespace SmartGarage.Services
                     if (details != null)
                     {
                         // Thay localhost:5173 bằng domain thực tế khi bạn đưa lên mạng
-                        string traCuuUrl = $"http://localhost:5173/tra-cuu/{details.LicensePlate}";
+                        string traCuuUrl = $"https://chuyen-de-asp.vercel.app/tra-cuu/{details.LicensePlate}";
 
                         string invoiceHtml = $@"
                     <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e5e7eb; border-radius: 10px; max-width: 600px;'>
