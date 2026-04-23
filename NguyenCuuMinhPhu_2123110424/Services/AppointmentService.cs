@@ -9,10 +9,11 @@ namespace SmartGarage.Services
     public class AppointmentService : IAppointmentService
     {
         private readonly GarageDbContext _context;
-
-        public AppointmentService(GarageDbContext context)
+        private readonly IEmailService _emailService;
+        public AppointmentService(GarageDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         public async Task<object> CreateAsync(AppointmentRequestDTO request)
@@ -114,9 +115,16 @@ namespace SmartGarage.Services
                         {
                             FullName = request.CustomerName,
                             PhoneNumber = request.PhoneNumber,
+                            Email = request.Email, // Lưu Email nếu khách có nhập
                             CreatedAt = DateTime.UtcNow
                         };
                         _context.Customers.Add(customer);
+                        await _context.SaveChangesAsync();
+                    }
+                    else if (string.IsNullOrEmpty(customer.Email) && !string.IsNullOrEmpty(request.Email))
+                    {
+                        // Nếu khách cũ chưa có email mà lần này nhập thì cập nhật luôn
+                        customer.Email = request.Email;
                         await _context.SaveChangesAsync();
                     }
 
@@ -151,6 +159,38 @@ namespace SmartGarage.Services
                     await _context.SaveChangesAsync();
 
                     await transaction.CommitAsync();
+
+                    // ===============================================
+                    // [MỚI] GỬI EMAIL XÁC NHẬN ĐẶT LỊCH (CHẠY NGẦM)
+                    // ===============================================
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(request.Email))
+                        {
+                            string emailBody = $@"
+                        <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e5e7eb; border-radius: 10px; max-width: 600px;'>
+                            <h2 style='color: #2563eb; margin-bottom: 5px;'>XÁC NHẬN ĐẶT LỊCH HẸN</h2>
+                            <p style='color: #64748b; font-size: 12px; margin-top: 0;'>Từ Hệ thống Smart Garage ERP</p>
+                            <hr style='border-top: 1px solid #f1f5f9; margin: 20px 0;'/>
+                            <p>Chào anh/chị <b>{request.CustomerName}</b>,</p>
+                            <p>Cảm ơn anh/chị đã đặt lịch tại Smart Garage. Hệ thống đã ghi nhận yêu cầu bảo dưỡng cho phương tiện biển số: <b style='color: #ea580c; background: #fff7ed; padding: 3px 8px; border-radius: 5px;'>{request.LicensePlate}</b>.</p>
+                            <ul style='background-color: #f8fafc; padding: 15px 15px 15px 35px; border-radius: 8px;'>
+                                <li style='margin-bottom: 10px;'><b>⏰ Thời gian hẹn:</b> {request.AppointmentDate:dd/MM/yyyy - HH:mm}</li>
+                                <li><b>🔧 Dịch vụ dự kiến:</b> {request.ExpectedServices}</li>
+                            </ul>
+                            <p>Chúng tôi sẽ ưu tiên tiếp nhận xe của anh/chị. Cố vấn dịch vụ sẽ liên hệ lại qua SĐT {request.PhoneNumber} nếu cần thêm thông tin.</p>
+                            <p>Trân trọng,<br/><b>Đội ngũ Smart Garage</b></p>
+                        </div>";
+
+                            // Gọi Service gửi mail, không dùng await để tránh làm chậm luồng response của người dùng (Fire and forget)
+                            _ = _emailService.SendEmailAsync(request.Email, "Xác nhận lịch hẹn tại Smart Garage", emailBody);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Chỉ log ra lỗi chứ không ném Exception làm hỏng việc đặt lịch
+                        Console.WriteLine($"[Lỗi gửi mail Đặt lịch]: {ex.Message}");
+                    }
 
                     return new { success = true, message = "Cảm ơn bạn đã đặt lịch! Gara sẽ sớm liên hệ xác nhận." };
                 }

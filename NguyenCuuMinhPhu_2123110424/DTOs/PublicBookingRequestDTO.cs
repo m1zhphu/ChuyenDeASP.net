@@ -18,5 +18,6 @@ namespace SmartGarage.DTOs
         public DateTime AppointmentDate { get; set; }
 
         public string? ExpectedServices { get; set; }
+        public string? Email { get; set; }
     }
 }

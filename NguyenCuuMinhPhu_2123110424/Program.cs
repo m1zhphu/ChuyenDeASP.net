@@ -44,6 +44,7 @@ namespace NguyenCuuMinhPhu_2123110424
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<DashboardService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();

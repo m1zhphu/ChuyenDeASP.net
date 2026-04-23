@@ -9,10 +9,11 @@ namespace SmartGarage.Services
     public class RepairOrderService : IRepairOrderService
     {
         private readonly GarageDbContext _context;
-
-        public RepairOrderService(GarageDbContext context)
+        private readonly IEmailService _emailService;
+        public RepairOrderService(GarageDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         public async Task<object> CreateOrderAsync(CreateRepairOrderRequest request)
@@ -168,7 +169,6 @@ namespace SmartGarage.Services
                 RepairOrderId = order.Id,
                 AmountPaid = request.AmountPaid,
                 PaymentMethod = request.PaymentMethod,
-                // Thay Now thành UtcNow
                 PaymentDate = DateTime.UtcNow
             };
 
@@ -176,15 +176,70 @@ namespace SmartGarage.Services
             order.Status = "Completed";
 
             // 3. Logic lưu vết: Cập nhật ngày bảo dưỡng cuối cùng cho xe
-            var vehicle = await _context.Vehicles.FindAsync(order.VehicleId);
+            var vehicle = await _context.Vehicles
+                .Include(v => v.Customer) // Include Customer để lát nữa lấy Email gửi Hóa đơn
+                .FirstOrDefaultAsync(v => v.Id == order.VehicleId);
+
             if (vehicle != null)
             {
-                // Thay Now thành UtcNow
                 vehicle.LastServiceDate = DateTime.UtcNow;
             }
 
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync();
+
+            // ===============================================
+            // [MỚI] GỬI HÓA ĐƠN ĐIỆN TỬ QUA EMAIL KHÁCH HÀNG
+            // ===============================================
+            try
+            {
+                string? customerEmail = vehicle?.Customer?.Email;
+
+                if (!string.IsNullOrEmpty(customerEmail))
+                {
+                    // Gọi lại hàm GetOrderDetailsAsync (đã có sẵn trong file này) để lấy chi tiết dịch vụ/phụ tùng
+                    var details = await GetOrderDetailsAsync(request.OrderCode);
+
+                    if (details != null)
+                    {
+                        // Thay localhost:5173 bằng domain thực tế khi bạn đưa lên mạng
+                        string traCuuUrl = $"http://localhost:5173/tra-cuu/{details.LicensePlate}";
+
+                        string invoiceHtml = $@"
+                    <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e5e7eb; border-radius: 10px; max-width: 600px;'>
+                        <div style='text-align: center; margin-bottom: 20px;'>
+                            <h2 style='color: #16a34a; margin-bottom: 5px;'>HÓA ĐƠN ĐIỆN TỬ</h2>
+                            <p style='color: #64748b; font-size: 14px; margin-top: 0;'>SMART GARAGE ERP</p>
+                        </div>
+                        
+                        <div style='background-color: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+                            <p style='margin: 5px 0;'><b>Khách hàng:</b> {details.CustomerName}</p>
+                            <p style='margin: 5px 0;'><b>Mã phiếu:</b> {details.OrderCode}</p>
+                            <p style='margin: 5px 0;'><b>Biển số xe:</b> {details.LicensePlate}</p>
+                            <p style='margin: 5px 0;'><b>Hoàn thành:</b> {DateTime.UtcNow:dd/MM/yyyy HH:mm}</p>
+                        </div>
+
+                        <h3 style='color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;'>TỔNG THANH TOÁN: <span style='color: #2563eb; font-size: 24px;'>{details.FinalAmount:N0} VNĐ</span></h3>
+                        
+                        <div style='text-align: center; margin-top: 30px; padding: 20px; background-color: #f0fdf4; border-radius: 8px;'>
+                            <p style='color: #166534; font-weight: bold; margin-bottom: 15px;'>Mời quý khách xem chi tiết các hạng mục thay thế tại Sổ bảo dưỡng điện tử:</p>
+                            <a href='{traCuuUrl}' style='background-color: #16a34a; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>TRA CỨU SỔ BẢO DƯỠNG SỐ</a>
+                        </div>
+                        
+                        <p style='font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px;'>
+                            Email này được gửi tự động từ hệ thống Smart Garage. Vui lòng không trả lời.
+                        </p>
+                    </div>";
+
+                        // Fire and forget
+                        _ = _emailService.SendEmailAsync(customerEmail, $"Hóa đơn thanh toán Dịch vụ - Phiếu {details.OrderCode}", invoiceHtml);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Lỗi gửi mail Hóa đơn]: {ex.Message}");
+            }
 
             return new { success = true, message = "Thanh toán thành công. Cảm ơn quý khách!" };
         }
