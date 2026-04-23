@@ -113,7 +113,7 @@ namespace NguyenCuuMinhPhu_2123110424
             // CẤU HÌNH CORS CHO SIGNALR (ĐÃ SỬA)
             // ==============================================================
             app.UseCors(builder => builder
-                .WithOrigins("http://localhost:5173") // Chỉ định đích danh frontend React
+                .WithOrigins("http://localhost:5173", "https://chuyen-de-asp.vercel.app") // Chỉ định đích danh frontend React
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials() // BẮT BUỘC CÓ DÒNG NÀY CHO SIGNALR

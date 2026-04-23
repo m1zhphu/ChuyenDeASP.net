@@ -170,15 +170,12 @@ namespace SmartGarage.Controllers
             var task = await _context.RepairOrderServiceDetails.FindAsync(request.TaskId);
             if (task == null) return NotFound();
 
-            // 1. Đổi người thợ mới
+            // 1. Chỉ đổi ID người thợ mới
             task.MechanicId = request.NewMechanicId;
 
-            // 2. ÉP BUỘC TRẠNG THÁI VỀ "Pending" (Chờ xử lý)
-            // Việc này giúp xe biến mất khỏi "Lịch sử" và hiện lại trong "Công việc thợ" của thợ mới
-            task.Status = "Pending";
-
-            // 3. Xóa luôn ngày hoàn thành (nếu có) để lịch vẽ lại cho đúng
-            task.ActualEndTime = null;
+            // 2. KHÔNG ÉP TRẠNG THÁI VỀ "Pending" NỮA
+            // Nếu công việc đang là InProgress (Đang làm - Xanh dương), nó sẽ vẫn giữ nguyên InProgress cho thợ mới.
+            // Nếu công việc là Pending (Chờ làm - Màu Cam), nó vẫn là Pending.
 
             await _context.SaveChangesAsync();
             return Ok(new { success = true });
